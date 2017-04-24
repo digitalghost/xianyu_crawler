@@ -6,6 +6,7 @@ import urlparse
 import datetime
 import time
 import logging
+import copy
 
 class XianyuPipeline(object):
     def open_spider(self, spider):
@@ -21,6 +22,9 @@ class MongoPipeline(object):
         def __init__(self, mongo_uri, mongo_db):
             self.mongo_uri = mongo_uri
             self.mongo_db = mongo_db
+            logger = logging.getLogger(__name__)
+            self.logger = logger
+
         @classmethod
         def from_crawler(cls, crawler):
             return cls(
@@ -31,8 +35,45 @@ class MongoPipeline(object):
             self.client = pymongo.MongoClient(self.mongo_uri)
             self.db = self.client[self.mongo_db]
         def close_spider(self,spider):
+            for val in spider.custom_settings['SEARCH_CRITERIA']:
+                q = val['q'].decode('gbk')
+                cache_key = 'cache_' + q
+                self._save_batch_by_key(cache_key,spider,q)
             self.client.close()
         def process_item(self,item,spider):
+            url = str(item['url'])
+            qs = urlparse.urlsplit(url).query
+            q = unquote(urlparse.parse_qs(qs)['q'][0]).decode('gbk')
+            cache_key = "cache_" + q
+            items_cache = spider.crawler.stats.get_value(cache_key)
+            if items_cache == None:
+                spider.crawler.stats.set_value(cache_key,[])
+                items_cache = spider.crawler.stats.get_value(cache_key)
+            items_cache.append(item)
+            if len(items_cache) == spider.custom_settings['BATCH_MONGO_SAVE_CNT']:
+                self._save_batch_by_key(cache_key,spider,q)
+                
+            return item
+        def _save_batch_by_key(self,data_key,spider,q):
+            data = spider.crawler.stats.get_value(data_key)
+
+            if data == None or len(data) == 0:
+                return
+            data = copy.deepcopy(data)
+            spider.crawler.stats.set_value(data_key,[])
+            query = {"keyword":q,"request_id":spider.crawler.stats.get_value("request_id")}
+            result = self.db[q].find_one(query)
+            if result != None:
+                self.db[q].update(query, {'$push': {'items': {'$each':data}}})
+            else:
+                new_doc = {
+                        "keyword":q,
+                        "request_id":spider.crawler.stats.get_value("request_id"),
+                        "last_modified": datetime.datetime.utcnow(),
+                        "items":data
+                       }
+                self.db[q].insert_one(new_doc)
+        def process_item2(self,item,spider):
             url = str(item['url'])
             qs = urlparse.urlsplit(url).query
             q = unquote(urlparse.parse_qs(qs)['q'][0]).decode('gbk')
@@ -46,14 +87,13 @@ class MongoPipeline(object):
             #query = {'xianyu_id':item['xianyu_id']} 
             #self.db[q].update(query, item,upsert=True)
             query = {"keyword":q,"request_id":spider.crawler.stats.get_value("request_id")}
-            result = self.db[q].find_one(query)
             if result != None:
                 self.db[q].update(query, {'$push': {'items': item}})
             else:
                 self.db[q].insert_one(new_doc)
-
-
             return item
+
+
 
 class ExchangeTotalSavePipeline(object):
     mongo_uri = None 

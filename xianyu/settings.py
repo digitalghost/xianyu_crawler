@@ -74,7 +74,7 @@ ITEM_PIPELINES = {
 
 # MongoDB Settings
 MONGO_URI = 'mongodb://localhost:27017'
-MONGO_DATABASE = 'xianyu_exchange2'
+MONGO_DATABASE = 'xianyu_exchange'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html

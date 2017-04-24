@@ -14,8 +14,8 @@ class XianyuSpider(scrapy.Spider):
         'SEARCH_CRITERIA':[
             {'q':u'iphone se 64','ist':'0','st_edtime':'1'},
             {'q':u'nintendo switch','ist':'0','st_edtime':'1'},
-            {'q':u'求购'.encode('gbk'),'ist':'0','st_edtime':'1','divisionId':'110100'},
-            {'q':u'国行 iphone 7 plus 粉色 128gb'.encode('gbk'),'ist':'0','st_edtime':'1'},
+            #{'q':u'求购'.encode('gbk'),'ist':'0','st_edtime':'1','divisionId':'110100'},
+            {'q':u'小米 mix 256gb'.encode('gbk'),'ist':'0','st_edtime':'1'},
             {'q':u'Casio tr600'.encode('gbk'),'ist':'0','st_edtime':'1',},
             {'q':'iphone 7 128gb','ist':'0','st_edtime':'1'},
             {'q':'iphone 7 256gb','ist':'0','st_edtime':'1'},
@@ -26,7 +26,8 @@ class XianyuSpider(scrapy.Spider):
         'ITEM_PIPELINES': {
             'xianyu.pipelines.MongoPipeline': 100,
             'xianyu.pipelines.ExchangeSavePipeline': 99,
-        }
+        },
+        'BATCH_MONGO_SAVE_CNT':200
 
     }
 

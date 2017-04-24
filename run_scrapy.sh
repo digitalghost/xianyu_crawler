@@ -1,4 +1,4 @@
-PATH=$PATH:/usr/local/bin
+PATH=$PATH:/usr/bin
 export PATH
-cd ~/Projects/scrapyTest/xianyu/
+cd /root/xianyu_crawler/
 scrapy crawl xianyu > c.log
